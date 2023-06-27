@@ -1,0 +1,33 @@
+{
+  "tests": [
+    {
+      "name": "Checkstyle",
+      "setup": "",
+      "run": "gradle checkstyleMain --warning-mode none",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 1
+    },
+    {
+      "name": "Spotbugs",
+      "setup": "",
+      "run": "gradle spotbugsMain --warning-mode none",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 1
+    },
+    {
+      "name": "Sonarlint",
+      "setup": "",
+      "run": "gradle sonarlintMain --warning-mode none",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 1    }
+  ]
+}

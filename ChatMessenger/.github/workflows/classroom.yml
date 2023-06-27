@@ -1,0 +1,98 @@
+    name: GitHub Classroom Workflow
+
+    on: [push]
+
+    jobs:
+        build:
+            name: Check Code Quality
+            runs-on: ubuntu-latest
+            steps:
+            - name: Check-out Repository
+              uses: actions/checkout@v2
+            # setup JAVA version 11
+            - name: Setup Java 11
+              uses: actions/setup-java@v1
+              with:
+                    java-version: '11'
+            # start testing the submissions
+            - name: Testing (Checkstyle, Spotbugs, ...)
+              uses: education/autograding@v1
+              id: autograder
+              continue-on-error: true 
+            # checks if files from checkstyle are created
+            - name: Checkstyle file existence
+              id: checkstyle_files
+              if: ${{ steps.autograder.outcome != 'success' }}
+              uses: andstor/file-existence-action@v1
+              with:
+                    files: "build/reports/checkstyle/main.html"
+            # creates the artifact file for checkstyle reports to download        
+            - name: Create Artifact for Checkstyle
+              uses: actions/upload-artifact@v3
+              if: steps.checkstyle_files.outputs.files_exists == 'true'
+              with:
+                    name: Checkstyle
+                    path: build/reports/checkstyle
+            # checks if files from sonarlint are created
+            - name: Sonarlint file existence
+              id: checksonarlint_files
+              if: ${{ steps.autograder.outcome != 'success' }}
+              uses: andstor/file-existence-action@v1
+              with:
+                    files: "build/reports/sonarlint/sonarlintMain/report.html"
+            # creates the artifact file for sonarlint reports to download  
+            - name: Create Artifact for Sonarlint
+              uses: actions/upload-artifact@v3
+              if: steps.checksonarlint_files.outputs.files_exists == 'true'
+              with:
+                    name: Sonarlint
+                    path: build/reports/sonarlint
+            # checks if files from spotbugs are created
+            - name: Spotbugs file existence
+              id: checkspotbugs_files
+              if: ${{ steps.autograder.outcome != 'success' }}
+              uses: andstor/file-existence-action@v1
+              with:
+                    files: "build/reports/spotbugs/main.html"
+            # creates the artifact file for sonarlint reports to download
+            - name: Create Artifact for Spotbugs
+              uses: actions/upload-artifact@v3
+              if: steps.checkspotbugs_files.outputs.files_exists == 'true'
+              with:
+                    name: Spotbugs
+                    path: build/reports/spotbugs
+            #- name: JUnit file existence
+            #  id: checkjunit_files
+            #  uses: andstor/file-existence-action@v1
+            #  with:
+            #        files: "build/reports/tests/test/index.html"
+            #- name: Create Artifact for JUnit
+            #  uses: actions/upload-artifact@v3
+            #  if: steps.checkjunit_files.outputs.files_exists == 'true'
+            #  with:
+            #        name: JUnit
+            #        path: build/reports/tests
+            #- name: PMD file existence
+            #  id: checkpmd_files
+            #  if: ${{ steps.autograder.outcome != 'success' }}
+            #  uses: andstor/file-existence-action@v1
+            #  with:
+            #        files: "build/reports/pmd/pmdMain/report.html" 
+            #- name: Create Artifact for PMD
+            #  uses: actions/upload-artifact@v3
+            #  if: steps.checkpmd_files.outputs.files_exists == 'true'
+            #  with:
+            #        name: PMD
+            #        path: build/reports/pmd
+
+            - name: Create an Issue
+              if: ${{ steps.autograder.outcome != 'success' }}
+              run: |
+                   export day=$(date +%d-%m-%Y)
+                   export time=$(date -d '+2 hours' '+%T')
+                   export body=${{ steps.autograder.outputs.points }}
+                   jq -nc '{"title":("Issue Test Reports "+env.day+" Time "+env.time), "body":("The tests revealed possible improvements in terms of the quality of the code. Please check the artifacts that can be found in the actions! "+env.body+" tests passed.")}' | \
+                   curl -sL  -X POST -d @- \
+                    -H "Content-Type: text/html" \
+                    -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                    "https://api.github.com/repos/$GITHUB_REPOSITORY/issues"
